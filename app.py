@@ -86,8 +86,13 @@ LOW_DISTRESS_PATTERNS = [
     r"\bsad\b",
     r"\btired\b",
     r"\boverthinking\b",
-    r"\bcan't focus\b",
+    r"\bcan'?t focus\b",
     r"\bcannot focus\b",
+    r"\bcan'?t concentrate\b",
+    r"\bcannot concentrate\b",
+    r"\bfocus\b",
+    r"\battention\b",
+    r"\bconcentration\b",
     r"\badhd\b",
     r"\bdistracted\b",
 ]
@@ -110,8 +115,12 @@ def recommend_game(text: str) -> Optional[str]:
     return None
 
 
+def normalize_text(message: str) -> str:
+    return message.lower().replace("’", "'").strip()
+
+
 def classify_message(message: str):
-    text = message.lower().strip()
+    text = normalize_text(message)
 
     if has_match(text, CRISIS_PATTERNS):
         return "T3", "crisis", None, True
