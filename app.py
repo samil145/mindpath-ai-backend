@@ -95,6 +95,16 @@ LOW_DISTRESS_PATTERNS = [
     r"\bconcentration\b",
     r"\badhd\b",
     r"\bdistracted\b",
+    r"\bocd\b",
+    r"\bintrusive thoughts?\b",
+    r"\bobsession(s)?\b",
+    r"\bcompulsion(s)?\b",
+    r"\bdepressed\b",
+    r"\bdepression\b",
+    r"\blonely\b",
+    r"\bloneliness\b",
+    r"\bsleep\b",
+    r"\binsomnia\b",
 ]
 
 
@@ -143,7 +153,28 @@ def crisis_reply() -> str:
     )
 
 
-def fallback_reply(game: Optional[str]) -> str:
+def fallback_reply(user_message: str, game: Optional[str]) -> str:
+    text = normalize_text(user_message)
+
+    if "ocd" in text or "intrusive" in text or "obsession" in text or "compulsion" in text:
+        return (
+            "OCD-like intrusive thoughts can feel repetitive and hard to ignore, but having a thought does not mean you want it or will act on it. "
+            "Try labeling it as an intrusive thought, pause before doing any checking or reassurance behavior, and bring attention back to one concrete task. "
+            "MindPath cannot diagnose OCD, so if this is affecting daily life, a qualified mental health professional can help."
+        )
+
+    if "depress" in text or "lonely" in text or "sad" in text:
+        return (
+            "I hear that this feels heavy. A small first step is to reduce the size of the task: drink water, sit somewhere safe, and message one trusted person if you can. "
+            "If this low mood keeps coming back or affects daily life, professional support would be appropriate."
+        )
+
+    if "sleep" in text or "insomnia" in text or "tired" in text:
+        return (
+            "Sleep problems can make emotions feel stronger. For tonight, try a simple wind-down: dim the screen, slow your breathing, and write one worry on paper instead of solving it now. "
+            "If sleep problems continue, consider speaking with a health professional."
+        )
+
     if game == "panic_breathing":
         return "It sounds intense right now. A short breathing exercise may help. [GAME:panic_breathing]"
 
@@ -153,7 +184,10 @@ def fallback_reply(game: Optional[str]) -> str:
     if game == "adhd_attention":
         return "It sounds like focusing is difficult right now. A short attention exercise may help. [GAME:adhd_attention]"
 
-    return "I hear you. Try describing what you are feeling in one or two sentences, and we can choose a small next step."
+    return (
+        "I hear you. I can support with coping guidance, reflection, and simple next steps. "
+        "Tell me what feels hardest right now, and I will suggest one practical step."
+    )
 
 
 def call_gemini(user_message: str, distress_level: str, escalation_level: str, game: Optional[str]) -> str:
@@ -211,22 +245,22 @@ def call_gemini(user_message: str, distress_level: str, escalation_level: str, g
 
         candidates = data.get("candidates", [])
         if not candidates:
-            return fallback_reply(game)
+            return fallback_reply(user_message, game)
 
         if candidates[0].get("finishReason") == "SAFETY":
-            return fallback_reply(game)
+            return fallback_reply(user_message, game)
 
         parts = candidates[0]["content"]["parts"]
         answer = parts[0].get("text", "").strip()
 
         if not answer:
-            return fallback_reply(game)
+            return fallback_reply(user_message, game)
 
         return answer
 
     except Exception as error:
         print("Gemini error:", error)
-        return fallback_reply(game)
+        return fallback_reply(user_message, game)
 
 
 @app.get("/")
